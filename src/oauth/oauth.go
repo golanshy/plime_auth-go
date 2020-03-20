@@ -38,14 +38,15 @@ type oauthClient struct {
 }
 
 type accessToken struct {
-	Id       string `json:"id"`
-	UserId   int64  `json:"user_id"`
-	ClientId int64  `json:"client_id"`
+	TokenType   string `json:"token_type,omitempty"`
+	AccessToken string `json:"access_token"`
+	UserId      int64  `json:"user_id,omitempty"`
+	ClientId    string `json:"client_id,omitempty"`
+	Expires     int64  `json:"expires"`
 }
 
 type oauthInterface interface {
-	//IsPublic(request *http.Request) bool
-	//AuthenticateRequest(request *http.Request)
+
 }
 
 func IsPublic(request *http.Request) bool {
@@ -55,7 +56,7 @@ func IsPublic(request *http.Request) bool {
 	return request.Header.Get(headerXPublic) == "true"
 }
 
-func GetCallerId(request *http.Request) int64  {
+func GetCallerId(request *http.Request) int64 {
 	if request == nil {
 		return 0
 	}
@@ -66,7 +67,7 @@ func GetCallerId(request *http.Request) int64  {
 	return callerId
 }
 
-func GetClientId(request *http.Request) int64  {
+func GetClientId(request *http.Request) int64 {
 	if request == nil {
 		return 0
 	}
