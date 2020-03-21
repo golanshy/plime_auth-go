@@ -117,19 +117,19 @@ func getAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
 	response := oauthRestClient.Get(fmt.Sprintf("/oauth/access_token/%s", accessTokenId))
 
 	if response == nil || response.Response == nil {
-		return nil, errors.NewInternalServerError("invalid rest client response when trying to get access token")
+		return nil, errors.NewInternalServerError("invalid rest client response when trying to get access token", nil)
 	}
 	if response.StatusCode > 299 {
 		var restErr errors.RestErr
 		err := json.Unmarshal(response.Bytes(), &restErr)
 		if err != nil {
-			return nil, errors.NewInternalServerError("invalid error interface when trying to get access token")
+			return nil, errors.NewInternalServerError("invalid error interface when trying to get access token", err)
 		}
 		return nil, &restErr
 	}
 	var at accessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		return nil, errors.NewInternalServerError("error unmarshaling json response when trying to get access token")
+		return nil, errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
 	}
 	return &at, nil
 }
