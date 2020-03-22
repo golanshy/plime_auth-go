@@ -3,7 +3,7 @@ package oauth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golanshy/plime_core-go/src/utils/errors"
+	"github.com/golanshy/plime_core-go/src/utils/rest_errors"
 	"github.com/mercadolibre/golang-restclient/rest"
 	"net/http"
 	"strconv"
@@ -78,7 +78,7 @@ func GetClientId(request *http.Request) int64 {
 	return clientId
 }
 
-func AuthenticateRequest(request *http.Request) *errors.RestErr {
+func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
@@ -113,23 +113,23 @@ func cleanRequest(request *http.Request) {
 	request.Header.Del(headerXPUserId)
 }
 
-func getAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
+func getAccessToken(accessTokenId string) (*accessToken, *rest_errors.RestErr) {
 	response := oauthRestClient.Get(fmt.Sprintf("/oauth/access_token/%s", accessTokenId))
 
 	if response == nil || response.Response == nil {
-		return nil, errors.NewInternalServerError("invalid rest client response when trying to get access token", nil)
+		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", nil)
 	}
 	if response.StatusCode > 299 {
-		var restErr errors.RestErr
+		var restErr rest_errors.RestErr
 		err := json.Unmarshal(response.Bytes(), &restErr)
 		if err != nil {
-			return nil, errors.NewInternalServerError("invalid error interface when trying to get access token", err)
+			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", err)
 		}
 		return nil, &restErr
 	}
 	var at accessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		return nil, errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
+		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
 	}
 	return &at, nil
 }
