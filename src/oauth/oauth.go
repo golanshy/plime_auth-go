@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -19,10 +20,9 @@ const (
 
 var (
 	oauthRestClient = rest.RequestBuilder{
-		Headers:        nil,
-		Timeout:        200,
-		ConnectTimeout: 0,
-		BaseURL:        "http://localhost:8080",
+		Timeout:        500 * time.Millisecond,
+		ConnectTimeout: 500 * time.Millisecond,
+		BaseURL:        "http://127.0.0.1:8080",
 		ContentType:    0,
 		DisableCache:   false,
 		DisableTimeout: false,
