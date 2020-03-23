@@ -82,9 +82,16 @@ func AuthenticateRequest(request *http.Request) rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
-
 	// http://api.domain.com/resource?access_token=abc123
-	accessTokenId := strings.TrimSpace(request.URL.Query().Get(parameterAccessToken))
+	//accessTokenId := strings.TrimSpace(request.URL.Query().Get(parameterAccessToken))
+
+	// Passing authorization in header Authorization Bearer abc123
+	authorizationHeader := c.GetHeader("Authorization")
+	var accessTokenId string
+	if strings.Contains(authorizationHeader, "Bearer") {
+		accessTokenId = strings.Split(authorizationHeader, "Bearer")[1]
+	}
+
 	if accessTokenId == "" {
 		return nil
 	}
