@@ -33,6 +33,10 @@
   branch = "master"
   name = "github.com/mercadolibre/golang-restclient"
 
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.5.1"
+
 [prune]
   go-tests = true
   unused-packages = true
