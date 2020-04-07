@@ -1,4 +1,4 @@
-package oauth
+package plime_auth_go
 
 import (
 	"encoding/json"
