@@ -5,6 +5,7 @@ github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LB
 github.com/golanshy/plime_core-go v1.3.0 h1:KmMKQMXKnKHWKMIE637gjDvyAofnsFy3mi0jYNhgeDg=
 github.com/golanshy/plime_core-go v1.3.0/go.mod h1:/N2DdrbtKZw0VsnGZdAghltHUY4fOQU+k72/Yq+7b0I=
 github.com/golanshy/plime_core-go v1.4.0/go.mod h1:+Zwa5QLJiMUIDN+uL6/+skhmd/mSr9wdTkO/Qpttg4o=
+github.com/golanshy/plime_core-go v1.5.0/go.mod h1:+Zwa5QLJiMUIDN+uL6/+skhmd/mSr9wdTkO/Qpttg4o=
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

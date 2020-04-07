@@ -2,4 +2,4 @@ module github.com/golanshy/plime_auth-go
 
 go 1.14
 
-require github.com/golanshy/plime_core-go v1.4.0
+require github.com/golanshy/plime_core-go v1.5.0
