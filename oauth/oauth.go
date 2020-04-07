@@ -3,8 +3,8 @@ package oauth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golanshy/plime_core-go/src/utils/rest_errors"
-	"github.com/mercadolibre/golang-restclient/rest"
+	"github.com/golanshy/plime_core-go/rest"
+	"github.com/golanshy/plime_core-go/utils/rest_errors"
 	"net/http"
 	"strconv"
 	"strings"
