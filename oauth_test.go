@@ -1,33 +1,37 @@
 package plime_auth_go
 
 import (
+	"github.com/golanshy/plime_core-go/rest"
+	"github.com/stretchr/testify/assert"
+	"net/http"
+	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	//rest.StartMockupServer()
-	//os.Exit(m.Run())
+	rest.StartMockupServer()
+	os.Exit(m.Run())
 }
 
 func TestOauthConstants(t *testing.T) {
-	//assert.EqualValues(t, "X-Public", headerXPublic)
-	//assert.EqualValues(t, "X-Client-Id", headerXPClientId)
-	//assert.EqualValues(t, "X-User-Id", headerXPUserId)
-	//assert.EqualValues(t, "access_token", parameterAccessToken)
+	assert.EqualValues(t, "X-Public", headerXPublic)
+	assert.EqualValues(t, "X-Client-Id", headerXPClientId)
+	assert.EqualValues(t, "X-User-Id", headerXPUserId)
+	assert.EqualValues(t, "access_token", parameterAccessToken)
 }
 
 func TestIsPublicNilRequest(t *testing.T) {
-	//assert.True(t, IsPublic(nil))
+	assert.True(t, IsPublic(nil))
 }
 
 func TestIsPublicNoError(t *testing.T) {
-	//request := http.Request{
-	//	Header: make(http.Header),
-	//}
-	//assert.False(t, IsPublic(&request))
-	//
-	//request.Header.Add("X-Public", "")
-	//assert.True(t, IsPublic(&request))
+	request := http.Request{
+		Header: make(http.Header),
+	}
+	assert.False(t, IsPublic(&request))
+
+	request.Header.Add("X-Public", "")
+	assert.True(t, IsPublic(&request))
 }
 
 func TestGetCallerIdNilRequest(t *testing.T) {

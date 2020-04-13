@@ -3,6 +3,7 @@ package plime_auth_go
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golanshy/plime_auth-go/domain/user_domain"
 	"github.com/golanshy/plime_core-go/rest"
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
 	"net/http"
@@ -32,6 +33,20 @@ var (
 		UserAgent:      "",
 		Client:         nil,
 	}
+
+	userRestClient = rest.RequestBuilder{
+		Timeout:        500 * time.Millisecond,
+		ConnectTimeout: 500 * time.Millisecond,
+		BaseURL:        "http://127.0.0.1:8081",
+		ContentType:    0,
+		DisableCache:   false,
+		DisableTimeout: false,
+		FollowRedirect: false,
+		CustomPool:     nil,
+		BasicAuth:      nil,
+		UserAgent:      "",
+		Client:         nil,
+	}
 )
 
 type oauthClient struct {
@@ -46,7 +61,6 @@ type accessToken struct {
 }
 
 type oauthInterface interface {
-
 }
 
 func IsPublic(request *http.Request) bool {
@@ -78,9 +92,9 @@ func GetClientId(request *http.Request) int64 {
 	return clientId
 }
 
-func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
+func AuthenticateRequest(request *http.Request) (*user_domain.User, *rest_errors.RestErr) {
 	if request == nil {
-		return nil
+		return nil, nil
 	}
 	// Passing authorization in header Authorization Bearer abc123
 	authorizationHeader := request.Header.Get("Authorization")
@@ -89,23 +103,29 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		accessTokenId = strings.Split(authorizationHeader, "Bearer")[1]
 	}
 	if accessTokenId == "" {
-		return nil
+		return nil, nil
 	}
 
 	// Call the OAuth API and validate it
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
 		if err.Status == http.StatusNotFound {
-			return nil
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
 
 	cleanRequest(request)
 	request.Header.Add(headerXPClientId, fmt.Sprintf("%s", at.ClientId))
 	request.Header.Add(headerXPUserId, fmt.Sprintf("%d", at.UserId))
 
-	return nil
+	if at.UserId > 0 {
+		user, _ := getUser(at.UserId)
+		if user != nil {
+			return user, nil
+		}
+	}
+	return nil, nil
 }
 
 func cleanRequest(request *http.Request) {
@@ -135,4 +155,25 @@ func getAccessToken(accessTokenId string) (*accessToken, *rest_errors.RestErr) {
 		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
 	}
 	return &at, nil
+}
+
+func getUser(userId int64) (*user_domain.User, *rest_errors.RestErr) {
+	response := userRestClient.Get(fmt.Sprintf("/users/%d", userId))
+
+	if response == nil || response.Response == nil {
+		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get user", nil)
+	}
+	if response.StatusCode > 299 {
+		var restErr *rest_errors.RestErr
+		err := json.Unmarshal(response.Bytes(), &restErr)
+		if err != nil {
+			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get user", err)
+		}
+		return nil, restErr
+	}
+	var user user_domain.User
+	if err := json.Unmarshal(response.Bytes(), &user); err != nil {
+		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get user", err)
+	}
+	return &user, nil
 }
