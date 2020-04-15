@@ -3,6 +3,7 @@ package plime_auth_go
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golanshy/plime_core-go/logger"
 	"github.com/golanshy/plime_core-go/rest"
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
 	"net/http"
@@ -88,14 +89,16 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		accessTokenId = strings.Split(authorizationHeader, "Bearer")[1]
 	}
 	if accessTokenId == "" {
-		return nil
+		logger.Error("unauthorized access, no Bearer access token", nil)
+		return rest_errors.NewUnauthorizedError("unauthorized access")
 	}
 
 	// Call the OAuth API and validate it
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
 		if err.Status == http.StatusNotFound {
-			return nil
+			logger.Error("unauthorized access, Bearer access token not found", nil)
+			return rest_errors.NewUnauthorizedError("unauthorized access")
 		}
 		return err
 	}
