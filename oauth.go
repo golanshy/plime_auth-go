@@ -3,6 +3,7 @@ package plime_auth_go
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golanshy/plime_core-go/data_models/access_token_dto"
 	"github.com/golanshy/plime_core-go/logger"
 	"github.com/golanshy/plime_core-go/rest"
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
@@ -103,10 +104,14 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		return err
 	}
 
+	if at.IsExpired() {
+		logger.Error("error access token expired", nil)
+		return rest_errors.NewUnauthorizedError("access token expired")
+	}
+
 	cleanRequest(request)
 	request.Header.Add(headerXPClientId, fmt.Sprintf("%s", at.ClientId))
 	request.Header.Add(headerXPUserId, fmt.Sprintf("%d", at.UserId))
-
 	return nil
 }
 
@@ -118,7 +123,7 @@ func cleanRequest(request *http.Request) {
 	request.Header.Del(headerXPUserId)
 }
 
-func getAccessToken(accessTokenId string) (*accessToken, *rest_errors.RestErr) {
+func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_errors.RestErr) {
 	response := oauthRestClient.Get(fmt.Sprintf("/oauth/access_token/%s", accessTokenId))
 
 	if response == nil || response.Response == nil {
@@ -132,7 +137,7 @@ func getAccessToken(accessTokenId string) (*accessToken, *rest_errors.RestErr) {
 		}
 		return nil, restErr
 	}
-	var at accessToken
+	var at access_token_dto.AccessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
 		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
 	}
