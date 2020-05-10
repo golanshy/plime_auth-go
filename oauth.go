@@ -22,9 +22,9 @@ const (
 
 var (
 	oauthRestClient = rest.RequestBuilder{
-		Timeout:        500 * time.Millisecond,
-		ConnectTimeout: 500 * time.Millisecond,
-		BaseURL:        "http://127.0.0.1:8080",
+		Timeout:        5000 * time.Millisecond,
+		ConnectTimeout: 5000 * time.Millisecond,
+		BaseURL:        "https://auth.plimepay.com",
 		ContentType:    0,
 		DisableCache:   false,
 		DisableTimeout: false,
@@ -37,14 +37,6 @@ var (
 )
 
 type oauthClient struct {
-}
-
-type accessToken struct {
-	TokenType   string `json:"token_type,omitempty"`
-	AccessToken string `json:"access_token"`
-	UserId      int64  `json:"user_id,omitempty"`
-	ClientId    string `json:"client_id,omitempty"`
-	Expires     int64  `json:"expires"`
 }
 
 type oauthInterface interface {
