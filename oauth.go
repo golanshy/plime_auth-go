@@ -24,7 +24,7 @@ var (
 	oauthRestClient = rest.RequestBuilder{
 		Timeout:        5000 * time.Millisecond,
 		ConnectTimeout: 5000 * time.Millisecond,
-		BaseURL:        "https://auth.plimepay.com",
+		BaseURL:        "oauth-api.default.svc.cluster.local",
 		ContentType:    0,
 		DisableCache:   false,
 		DisableTimeout: false,
