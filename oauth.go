@@ -25,7 +25,7 @@ var (
 	oauthRestClient = rest.RequestBuilder{
 		Timeout:        5000 * time.Millisecond,
 		ConnectTimeout: 5000 * time.Millisecond,
-		BaseURL:        os.Getenv("OAUTH_API_URL"),
+		BaseURL:        nil,
 		ContentType:    0,
 		DisableCache:   false,
 		DisableTimeout: false,
@@ -36,6 +36,10 @@ var (
 		Client:         nil,
 	}
 )
+
+func init() {
+	oauthRestClient.BaseURL = os.Getenv("OAUTH_API_URL")
+}
 
 type oauthClient struct {
 }
