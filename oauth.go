@@ -25,7 +25,7 @@ var (
 	oauthRestClient = rest.RequestBuilder{
 		Timeout:        5000 * time.Millisecond,
 		ConnectTimeout: 5000 * time.Millisecond,
-		BaseURL:        nil,
+		BaseURL:        "",
 		ContentType:    0,
 		DisableCache:   false,
 		DisableTimeout: false,
