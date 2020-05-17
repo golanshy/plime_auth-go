@@ -8,6 +8,7 @@ import (
 	"github.com/golanshy/plime_core-go/rest"
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ var (
 	oauthRestClient = rest.RequestBuilder{
 		Timeout:        5000 * time.Millisecond,
 		ConnectTimeout: 5000 * time.Millisecond,
-		BaseURL:        "oauth-api.default.svc.cluster.local",
+		BaseURL:        os.Getenv("OAUTH_API_URL"),
 		ContentType:    0,
 		DisableCache:   false,
 		DisableTimeout: false,
