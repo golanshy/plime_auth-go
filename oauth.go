@@ -87,11 +87,11 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 	if strings.Contains(authorizationHeader, "Bearer") {
 		accessTokenId = strings.Split(authorizationHeader, "Bearer")[1]
 	}
+	accessTokenId = strings.TrimSpace(accessTokenId)
 	if accessTokenId == "" {
 		logger.Error("unauthorized access, no Bearer access token", nil)
 		return rest_errors.NewUnauthorizedError("unauthorized access")
 	}
-
 	// Call the OAuth API and validate it
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
@@ -131,21 +131,21 @@ func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_
 		if response != nil {
 			err = response.Err
 		}
-		logger.Error(fmt.Sprintf("invalid rest client response when trying to get access token ", response.Err.Error()), err)
+		logger.Error(fmt.Sprintf("invalid rest client response when trying to get access token %s", response.Err.Error()), err)
 		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", err)
 	}
 	if response.StatusCode > 299 {
 		var restErr *rest_errors.RestErr
 		err := json.Unmarshal(response.Bytes(), &restErr)
 		if err != nil {
-			logger.Error(fmt.Sprintf("invalid error interface when trying to get access token ", response.Err.Error()), err)
+			logger.Error(fmt.Sprintf("invalid error interface when trying to get access token %s", response.Err.Error()), err)
 			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", err)
 		}
 		return nil, restErr
 	}
 	var at access_token_dto.AccessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		logger.Error(fmt.Sprintf("error unmarshaling json response when trying to get access token ", response.Err.Error()), err)
+		logger.Error(fmt.Sprintf("error unmarshaling json response when trying to get access token %s", response.Err.Error()), err)
 		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
 	}
 	return &at, nil
