@@ -2,6 +2,7 @@ package plime_auth_go
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/golanshy/plime_core-go/data_models/access_token_dto"
 	"github.com/golanshy/plime_core-go/logger"
@@ -121,21 +122,30 @@ func cleanRequest(request *http.Request) {
 }
 
 func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_errors.RestErr) {
-	response := oauthRestClient.Get(fmt.Sprintf("oauth/access_token/%s", accessTokenId))
+	path := fmt.Sprintf("/oauth/access_token/%s", accessTokenId)
+	response := oauthRestClient.Get(path)
+	logger.Info(fmt.Sprintf("trying to get access token from %s%s", oauthRestClient.BaseURL, path))
 
 	if response == nil || response.Response == nil {
-		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", nil)
+		err := errors.New("unknown error")
+		if response != nil {
+			err = response.Err
+		}
+		logger.Error(fmt.Sprintf("invalid rest client response when trying to get access token ", response.Err.Error()), err)
+		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", err)
 	}
 	if response.StatusCode > 299 {
 		var restErr *rest_errors.RestErr
 		err := json.Unmarshal(response.Bytes(), &restErr)
 		if err != nil {
+			logger.Error(fmt.Sprintf("invalid error interface when trying to get access token ", response.Err.Error()), err)
 			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", err)
 		}
 		return nil, restErr
 	}
 	var at access_token_dto.AccessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
+		logger.Error(fmt.Sprintf("error unmarshaling json response when trying to get access token ", response.Err.Error()), err)
 		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
 	}
 	return &at, nil
