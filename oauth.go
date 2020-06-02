@@ -168,7 +168,12 @@ func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_
 	return &at, nil
 }
 
-func GetUserId(email string) (*id_dto.Id, *rest_errors.RestErr) {
+func GetUserId(request *http.Request, email string) (*id_dto.Id, *rest_errors.RestErr) {
+	if request == nil {
+		return nil, rest_errors.NewUnauthorizedError("unauthorized access")
+	}
+	// Passing authorization in header Authorization Bearer abc123
+	usersRestClient.Headers.Add("Authorization", request.Header.Get("Authorization"))
 	path := fmt.Sprintf("/users?email=%s", email)
 	response := usersRestClient.Get(path)
 	logger.Info(fmt.Sprintf("trying to get user from %s%s", usersRestClient.BaseURL, path))
@@ -200,5 +205,3 @@ func GetUserId(email string) (*id_dto.Id, *rest_errors.RestErr) {
 		Id: user.Id,
 	}, nil
 }
-
-
