@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golanshy/plime_core-go/data_models/access_token_dto"
+	"github.com/golanshy/plime_core-go/data_models/id_dto"
+	"github.com/golanshy/plime_core-go/data_models/user_dto"
 	"github.com/golanshy/plime_core-go/logger"
 	"github.com/golanshy/plime_core-go/rest"
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
@@ -36,10 +38,25 @@ var (
 		UserAgent:      "",
 		Client:         nil,
 	}
+
+	usersRestClient = rest.RequestBuilder{
+		Timeout:        5000 * time.Millisecond,
+		ConnectTimeout: 5000 * time.Millisecond,
+		BaseURL:        "",
+		ContentType:    0,
+		DisableCache:   false,
+		DisableTimeout: false,
+		FollowRedirect: false,
+		CustomPool:     nil,
+		BasicAuth:      nil,
+		UserAgent:      "",
+		Client:         nil,
+	}
 )
 
 func init() {
 	oauthRestClient.BaseURL = os.Getenv("OAUTH_API_URL")
+	usersRestClient.BaseURL = os.Getenv("USERS_API_URL")
 }
 
 type oauthClient struct {
@@ -131,7 +148,7 @@ func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_
 		if response != nil {
 			err = response.Err
 		}
-		logger.Error(fmt.Sprintf("invalid rest client response when trying to get access token %s", response.Err.Error()), err)
+		logger.Error(fmt.Sprintf("invalid rest client response when trying to get access token %s", err.Error()), err)
 		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", err)
 	}
 	if response.StatusCode > 299 {
@@ -150,3 +167,38 @@ func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_
 	}
 	return &at, nil
 }
+
+func GetUserId(email string) (*id_dto.Id, *rest_errors.RestErr) {
+	path := fmt.Sprintf("/users?email=%s", email)
+	response := usersRestClient.Get(path)
+	logger.Info(fmt.Sprintf("trying to get user from %s%s", usersRestClient.BaseURL, path))
+
+	if response == nil || response.Response == nil {
+		err := errors.New("unknown error")
+		if response != nil {
+			err = response.Err
+		}
+		logger.Error(fmt.Sprintf("invalid rest client response when trying to get user %s", err.Error()), err)
+		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get user", err)
+	}
+	if response.StatusCode > 299 {
+		var restErr *rest_errors.RestErr
+		err := json.Unmarshal(response.Bytes(), &restErr)
+		if err != nil {
+			logger.Error(fmt.Sprintf("invalid error interface when trying to get user %s", response.Err.Error()), err)
+			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get user", err)
+		}
+		return nil, restErr
+	}
+	var user user_dto.User
+	if err := json.Unmarshal(response.Bytes(), &user); err != nil {
+		logger.Error(fmt.Sprintf("error unmarshaling json response when trying to get user %s", response.Err.Error()), err)
+		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get user", err)
+	}
+
+	return &id_dto.Id{
+		Id: user.Id,
+	}, nil
+}
+
+
