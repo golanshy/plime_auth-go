@@ -173,6 +173,7 @@ func GetUserId(request *http.Request, email string) (*id_dto.Id, *rest_errors.Re
 		return nil, rest_errors.NewUnauthorizedError("unauthorized access")
 	}
 	// Passing authorization in header Authorization Bearer abc123
+	usersRestClient.Headers = make(map[string][]string)
 	usersRestClient.Headers.Add("Authorization", request.Header.Get("Authorization"))
 	path := fmt.Sprintf("/users?email=%s", email)
 	response := usersRestClient.Get(path)
