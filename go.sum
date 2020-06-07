@@ -15,6 +15,8 @@ github.com/golanshy/plime_core-go v1.5.3 h1:RZbKCgKLHTght9TuX2ReskYlsAV4wGZJc41+
 github.com/golanshy/plime_core-go v1.5.3/go.mod h1:+Zwa5QLJiMUIDN+uL6/+skhmd/mSr9wdTkO/Qpttg4o=
 github.com/golanshy/plime_core-go v1.5.17 h1:l4SWgxprcoqAb7L1CRzK2hZQXZmRIBHBsV0AriX+NeA=
 github.com/golanshy/plime_core-go v1.5.17/go.mod h1:+Zwa5QLJiMUIDN+uL6/+skhmd/mSr9wdTkO/Qpttg4o=
+github.com/golanshy/plime_core-go v1.5.26 h1:yXDlNgcka0JdrEMOGRPOjsFPspC5UhDhcdSb8v+vXB8=
+github.com/golanshy/plime_core-go v1.5.26/go.mod h1:+Zwa5QLJiMUIDN+uL6/+skhmd/mSr9wdTkO/Qpttg4o=
 github.com/google/renameio v0.1.0 h1:GOZbcHa3HfsPKPlmyPyN2KEohoMXOhdMbHrvbpl2QaA=
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/kisielk/gotool v1.0.0 h1:AV2c/EiW3KqPNT9ZKl07ehoAGi4C5/01Cfbblndcapg=
