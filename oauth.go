@@ -119,6 +119,16 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		return err
 	}
 
+	if !at.EmailVerified {
+		logger.Error("error email verification required", nil)
+		return rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
+	}
+
+	if !at.MobileVerified {
+		logger.Error("error mobile verification required", nil)
+		return rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
+	}
+
 	if at.IsExpired() {
 		logger.Error("error access token expired", nil)
 		return rest_errors.NewUnauthorizedError("access token expired")
@@ -141,7 +151,6 @@ func cleanRequest(request *http.Request) {
 func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_errors.RestErr) {
 	path := fmt.Sprintf("/oauth/access_token/%s", accessTokenId)
 	response := oauthRestClient.Get(path)
-	logger.Info(fmt.Sprintf("trying to get access token from %s%s", oauthRestClient.BaseURL, path))
 
 	if response == nil || response.Response == nil {
 		err := errors.New("unknown error")
