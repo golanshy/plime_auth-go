@@ -12,7 +12,6 @@ import (
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -72,26 +71,18 @@ func IsPublic(request *http.Request) bool {
 	return request.Header.Get(headerXPublic) == "true"
 }
 
-func GetCallerId(request *http.Request) int64 {
+func GetCallerId(request *http.Request) string {
 	if request == nil {
-		return 0
+		return ""
 	}
-	callerId, err := strconv.ParseInt(request.Header.Get(headerXPUserId), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return callerId
+	return request.Header.Get(headerXPUserId)
 }
 
-func GetClientId(request *http.Request) int64 {
+func GetClientId(request *http.Request) string {
 	if request == nil {
-		return 0
+		return ""
 	}
-	clientId, err := strconv.ParseInt(request.Header.Get(headerXPClientId), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return clientId
+	return request.Header.Get(headerXPClientId)
 }
 
 func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
