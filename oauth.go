@@ -126,8 +126,8 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 	}
 
 	cleanRequest(request)
-	request.Header.Add(headerXPClientId, fmt.Sprintf("%s", at.ClientId))
-	request.Header.Add(headerXPUserId, fmt.Sprintf("%d", at.UserId))
+	request.Header.Add(headerXPClientId, at.ClientId)
+	request.Header.Add(headerXPUserId, at.UserId)
 	return nil
 }
 
