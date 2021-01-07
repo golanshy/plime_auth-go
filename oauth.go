@@ -142,6 +142,7 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 
 	requestDump, _ := httputil.DumpRequest(request, true)
 	if requestDump != nil {
+		fmt.Println(string(requestDump))
 		logger.Info(string(requestDump))
 	}
 
