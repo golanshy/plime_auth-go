@@ -9,8 +9,10 @@ import (
 	"github.com/golanshy/plime_core-go/data_models/user_dto"
 	"github.com/golanshy/plime_core-go/logger"
 	"github.com/golanshy/plime_core-go/rest"
+	"github.com/golanshy/plime_core-go/utils/crypto_utils"
 	"github.com/golanshy/plime_core-go/utils/rest_errors"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"strings"
 	"time"
@@ -20,6 +22,8 @@ const (
 	headerXPublic        = "X-Public"
 	headerXPClientId     = "X-Client-Id"
 	headerXPUserId       = "X-User-Id"
+	headerXSessionId     = "X-Session-Id"
+	headerXSessionLength = 24
 	parameterAccessToken = "access_token"
 )
 
@@ -110,24 +114,37 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		return err
 	}
 
+	if at.IsExpired() {
+		err := rest_errors.NewUnauthorizedError("access token expired")
+		logger.Error(err.Message, errors.New(err.Message))
+		return err
+	}
+
 	if !at.EmailVerified {
-		logger.Error("error email verification required", nil)
-		return rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
+		err = rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
+		logger.Error(err.Message, errors.New(err.Message))
+		return err
 	}
 
 	if !at.MobileVerified {
-		logger.Error("error mobile verification required", nil)
-		return rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
-	}
-
-	if at.IsExpired() {
-		logger.Error("error access token expired", nil)
-		return rest_errors.NewUnauthorizedError("access token expired")
+		err := rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
+		logger.Error(err.Message, errors.New(err.Message))
+		return err
 	}
 
 	cleanRequest(request)
 	request.Header.Add(headerXPClientId, at.ClientId)
 	request.Header.Add(headerXPUserId, at.UserId)
+
+	if request.Header.Get(headerXSessionId) == "" {
+		request.Header.Add(headerXSessionId, crypto_utils.GenerateSecret(headerXSessionLength))
+	}
+
+	requestDump, _ := httputil.DumpRequest(request, true)
+	if requestDump != nil {
+		logger.Info(string(requestDump))
+	}
+
 	return nil
 }
 
