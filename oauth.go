@@ -120,18 +120,6 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		return err
 	}
 
-	if !at.EmailVerified {
-		err = rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
-		logger.Error(err.Message, errors.New(err.Message))
-		return err
-	}
-
-	if !at.MobileVerified {
-		err := rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
-		logger.Error(err.Message, errors.New(err.Message))
-		return err
-	}
-
 	cleanRequest(request)
 	request.Header.Add(headerXPClientId, at.ClientId)
 	request.Header.Add(headerXPUserId, at.UserId)
