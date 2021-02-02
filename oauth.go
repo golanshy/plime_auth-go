@@ -89,7 +89,15 @@ func GetClientId(request *http.Request) string {
 	return request.Header.Get(headerXPClientId)
 }
 
+func AuthenticatePublicRequest(request *http.Request) *rest_errors.RestErr {
+	return authenticateRequest(request, true)
+}
+
 func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
+	return authenticateRequest(request, false)
+}
+
+func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
@@ -120,19 +128,22 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 		return err
 	}
 
-	if !at.EmailVerified {
-		err = rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
-		logger.Error(err.Message, errors.New(err.Message))
-		return err
+	if !isPublic {
+		if !at.EmailVerified {
+			err = rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
+			logger.Error(err.Message, errors.New(err.Message))
+			return err
+		}
+
+		if !at.MobileVerified {
+			err := rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
+			logger.Error(err.Message, errors.New(err.Message))
+			return err
+		}
 	}
 
-	if !at.MobileVerified {
-		err := rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
-		logger.Error(err.Message, errors.New(err.Message))
-		return err
-	}
-
-	cleanRequest(request)
+	request.Header.Del(headerXPClientId)
+	request.Header.Del(headerXPUserId)
 	request.Header.Add(headerXPClientId, at.ClientId)
 	request.Header.Add(headerXPUserId, at.UserId)
 
@@ -147,14 +158,6 @@ func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
 	}
 
 	return nil
-}
-
-func cleanRequest(request *http.Request) {
-	if request == nil {
-		return
-	}
-	request.Header.Del(headerXPClientId)
-	request.Header.Del(headerXPUserId)
 }
 
 func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_errors.RestErr) {
