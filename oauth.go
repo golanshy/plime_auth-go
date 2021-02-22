@@ -28,6 +28,7 @@ const (
 )
 
 var (
+
 	oauthRestClient = rest.RequestBuilder{
 		Timeout:        5000 * time.Millisecond,
 		ConnectTimeout: 5000 * time.Millisecond,
@@ -58,8 +59,14 @@ var (
 )
 
 func init() {
-	oauthRestClient.BaseURL = os.Getenv("OAUTH_API_URL")
-	usersRestClient.BaseURL = os.Getenv("USERS_API_URL")
+	oauthRestClient.BaseURL = strings.TrimSpace(os.Getenv("OAUTH_API_URL"))
+	if oauthRestClient.BaseURL == "" {
+		panic(errors.New("missing OAUTH_API_URL"))
+	}
+	usersRestClient.BaseURL = strings.TrimSpace(os.Getenv("USERS_API_URL"))
+	if usersRestClient.BaseURL == "" {
+		panic(errors.New("missing USERS_API_URL"))
+	}
 }
 
 type oauthClient struct {
@@ -89,6 +96,55 @@ func GetClientId(request *http.Request) string {
 	return request.Header.Get(headerXPClientId)
 }
 
+func AuthenticateBasicAuthRequest(request *http.Request) *rest_errors.RestErr {
+	if request == nil {
+		return nil
+	}
+
+	requestDump, _ := httputil.DumpRequest(request, true)
+	if requestDump != nil {
+		fmt.Println(string(requestDump))
+		logger.Info(string(requestDump))
+	}
+
+	username, password, ok := request.BasicAuth()
+	username = strings.TrimSpace(username)
+	password = strings.TrimSpace(password)
+	if !ok {
+		logger.Error("unauthorized access, invalid basic auth params", nil)
+		return rest_errors.NewUnauthorizedError("unauthorized access")
+	}
+
+	oauthRestClient.BasicAuth = &rest.BasicAuth{
+		UserName: username,
+		Password: password,
+	}
+
+	path := fmt.Sprintf("/basic_auth")
+	response := oauthRestClient.Post(path, nil)
+	logger.Info(fmt.Sprintf("trying to basic auth %s%s", oauthRestClient.BaseURL, path))
+
+	if response == nil || response.Response == nil {
+		err := errors.New("unknown error")
+		if response != nil {
+			err = response.Err
+		}
+		logger.Error(fmt.Sprintf("invalid rest client response when trying to basic auth %s", err.Error()), err)
+		return rest_errors.NewInternalServerError("invalid rest client response when trying to basic auth", err)
+	}
+	if response.StatusCode > 299 {
+		var restErr *rest_errors.RestErr
+		err := json.Unmarshal(response.Bytes(), &restErr)
+		if err != nil {
+			logger.Error(fmt.Sprintf("invalid error interface when trying to basic auth %s", response.Err.Error()), err)
+			return rest_errors.NewInternalServerError("invalid error interface when trying to basic auth", err)
+		}
+		return restErr
+	}
+
+	return nil
+}
+
 func AuthenticatePublicRequest(request *http.Request) *rest_errors.RestErr {
 	return authenticateRequest(request, true)
 }
@@ -101,6 +157,13 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 	if request == nil {
 		return nil
 	}
+
+	requestDump, _ := httputil.DumpRequest(request, true)
+	if requestDump != nil {
+		fmt.Println(string(requestDump))
+		logger.Info(string(requestDump))
+	}
+
 	// Passing authorization in header Authorization Bearer abc123
 	authorizationHeader := request.Header.Get("Authorization")
 	var accessTokenId string
@@ -149,12 +212,6 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 
 	if request.Header.Get(headerXSessionId) == "" {
 		request.Header.Add(headerXSessionId, crypto_utils.GenerateSecret(headerXSessionLength))
-	}
-
-	requestDump, _ := httputil.DumpRequest(request, true)
-	if requestDump != nil {
-		fmt.Println(string(requestDump))
-		logger.Info(string(requestDump))
 	}
 
 	return nil
