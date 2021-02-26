@@ -122,7 +122,6 @@ func AuthenticateBasicAuthRequest(request *http.Request) *rest_errors.RestErr {
 
 	path := fmt.Sprintf("/oauth/basic_auth")
 	response := oauthRestClient.Post(path, nil)
-	logger.Info(fmt.Sprintf("trying to basic auth %s%s", oauthRestClient.BaseURL, path))
 
 	if response == nil || response.Response == nil {
 		err := errors.New("unknown error")
