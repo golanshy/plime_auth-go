@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/golanshy/plime_core-go/data_models/access_token_dto"
 	"github.com/golanshy/plime_core-go/data_models/id_dto"
+	"github.com/golanshy/plime_core-go/data_models/jwt_dto"
 	"github.com/golanshy/plime_core-go/data_models/user_dto"
 	"github.com/golanshy/plime_core-go/logger"
 	"github.com/golanshy/plime_core-go/rest"
@@ -28,6 +30,7 @@ const (
 )
 
 var (
+	jwtKey []byte
 
 	oauthRestClient = rest.RequestBuilder{
 		Timeout:        5000 * time.Millisecond,
@@ -67,6 +70,12 @@ func init() {
 	if usersRestClient.BaseURL == "" {
 		panic(errors.New("missing USERS_API_URL"))
 	}
+
+	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
+	if jwtSecretKey == "" {
+		panic(errors.New("missing JWT_SECRET_KEY"))
+	}
+	jwtKey = []byte(jwtSecretKey)
 }
 
 type oauthClient struct {
@@ -175,7 +184,7 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 		return rest_errors.NewUnauthorizedError("unauthorized access")
 	}
 	// Call the OAuth API and validate it
-	at, err := getAccessToken(accessTokenId)
+	accessToken, err := getAccessToken(accessTokenId)
 	if err != nil {
 		if err.Status == http.StatusNotFound {
 			logger.Error("unauthorized access, Bearer access token not found", nil)
@@ -184,20 +193,33 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 		return err
 	}
 
-	if at.IsExpired() {
+	claims := &jwt_dto.Claims{}
+	tkn, jwtErr := jwt.ParseWithClaims(accessToken.Token, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if jwtErr != nil {
+		logger.Error("Unauthorized access invalid token", nil)
+		return  rest_errors.NewUnauthorizedError("Unauthorized access invalid token")
+	}
+	if !tkn.Valid {
+		logger.Error("Unauthorized access token not valid", nil)
+		return  rest_errors.NewUnauthorizedError("Unauthorized access token not valid")
+	}
+
+	if accessToken.IsExpired() {
 		err := rest_errors.NewUnauthorizedError("access token expired")
 		logger.Error(err.Message, errors.New(err.Message))
 		return err
 	}
 
 	if !isPublic {
-		if !at.EmailVerified {
+		if !claims.EmailVerified {
 			err = rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
 			logger.Error(err.Message, errors.New(err.Message))
 			return err
 		}
 
-		if !at.MobileVerified {
+		if !claims.MobileVerified {
 			err := rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
 			logger.Error(err.Message, errors.New(err.Message))
 			return err
@@ -206,8 +228,8 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 
 	request.Header.Del(headerXPClientId)
 	request.Header.Del(headerXPUserId)
-	request.Header.Add(headerXPClientId, at.ClientId)
-	request.Header.Add(headerXPUserId, at.UserId)
+	request.Header.Add(headerXPClientId, claims.ClientId)
+	request.Header.Add(headerXPUserId, claims.UserId)
 
 	if request.Header.Get(headerXSessionId) == "" {
 		request.Header.Add(headerXSessionId, crypto_utils.GenerateSecret(headerXSessionLength))
