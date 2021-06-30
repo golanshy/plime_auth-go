@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/golanshy/plime_core-go/data_models/access_token_dto"
 	"github.com/golanshy/plime_core-go/data_models/id_dto"
 	"github.com/golanshy/plime_core-go/data_models/jwt_dto"
 	"github.com/golanshy/plime_core-go/data_models/user_dto"
@@ -78,12 +77,6 @@ func init() {
 	jwtKey = []byte(jwtSecretKey)
 }
 
-type oauthClient struct {
-}
-
-type oauthInterface interface {
-}
-
 func IsPublic(request *http.Request) bool {
 	if request == nil {
 		return true
@@ -153,17 +146,17 @@ func AuthenticateBasicAuthRequest(request *http.Request) *rest_errors.RestErr {
 	return nil
 }
 
-func AuthenticatePublicRequest(request *http.Request) *rest_errors.RestErr {
+func AuthenticatePublicRequest(request *http.Request) (*string, *rest_errors.RestErr) {
 	return authenticateRequest(request, true)
 }
 
-func AuthenticateRequest(request *http.Request) *rest_errors.RestErr {
+func AuthenticateRequest(request *http.Request) (*string, *rest_errors.RestErr) {
 	return authenticateRequest(request, false)
 }
 
-func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.RestErr {
+func authenticateRequest(request *http.Request, isPublic bool) (*string, *rest_errors.RestErr) {
 	if request == nil {
-		return nil
+		return nil, nil
 	}
 
 	requestDump, _ := httputil.DumpRequest(request, true)
@@ -174,55 +167,46 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 
 	// Passing authorization in header Authorization Bearer abc123
 	authorizationHeader := request.Header.Get("Authorization")
-	var accessTokenId string
+	var authorizationToken string
 	if strings.Contains(authorizationHeader, "Bearer") {
-		accessTokenId = strings.Split(authorizationHeader, "Bearer")[1]
+		authorizationToken = strings.Split(authorizationHeader, "Bearer")[1]
 	}
-	accessTokenId = strings.TrimSpace(accessTokenId)
-	if accessTokenId == "" {
+	authorizationToken = strings.TrimSpace(authorizationToken)
+	if authorizationToken == "" {
 		logger.Error("unauthorized access, no Bearer access token", nil)
-		return rest_errors.NewUnauthorizedError("unauthorized access")
-	}
-	// Call the OAuth API and validate it
-	accessToken, err := getAccessToken(accessTokenId)
-	if err != nil {
-		if err.Status == http.StatusNotFound {
-			logger.Error("unauthorized access, Bearer access token not found", nil)
-			return rest_errors.NewUnauthorizedError("unauthorized access")
-		}
-		return err
+		return nil, rest_errors.NewUnauthorizedError("unauthorized access")
 	}
 
 	claims := &jwt_dto.Claims{}
-	tkn, jwtErr := jwt.ParseWithClaims(accessToken.Token, claims, func(token *jwt.Token) (interface{}, error) {
+	tkn, jwtErr := jwt.ParseWithClaims(authorizationToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
 	if jwtErr != nil {
 		logger.Error("Unauthorized access invalid token", nil)
-		return  rest_errors.NewUnauthorizedError("Unauthorized access invalid token")
+		return  nil, rest_errors.NewUnauthorizedError("Unauthorized access invalid token")
 	}
 	if !tkn.Valid {
 		logger.Error("Unauthorized access token not valid", nil)
-		return  rest_errors.NewUnauthorizedError("Unauthorized access token not valid")
+		return  nil, rest_errors.NewUnauthorizedError("Unauthorized access token not valid")
 	}
 
-	if accessToken.IsExpired() {
+	if time.Unix(claims.ExpiresAt, 0).Before(time.Now().UTC()) {
 		err := rest_errors.NewUnauthorizedError("access token expired")
 		logger.Error(err.Message, errors.New(err.Message))
-		return err
+		return nil, err
 	}
 
 	if !isPublic {
 		if !claims.EmailVerified {
-			err = rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
+			err := rest_errors.NewRestError("Email verification required", http.StatusForbidden, "email_verification_required")
 			logger.Error(err.Message, errors.New(err.Message))
-			return err
+			return nil, err
 		}
 
 		if !claims.MobileVerified {
 			err := rest_errors.NewRestError("Mobile verification required", http.StatusForbidden, "mobile_verification_required")
 			logger.Error(err.Message, errors.New(err.Message))
-			return err
+			return nil, err
 		}
 	}
 
@@ -235,36 +219,7 @@ func authenticateRequest(request *http.Request, isPublic bool) *rest_errors.Rest
 		request.Header.Add(headerXSessionId, crypto_utils.GenerateSecret(headerXSessionLength))
 	}
 
-	return nil
-}
-
-func getAccessToken(accessTokenId string) (*access_token_dto.AccessToken, *rest_errors.RestErr) {
-	path := fmt.Sprintf("/oauth/access_token/%s", accessTokenId)
-	response := oauthRestClient.Get(path)
-
-	if response == nil || response.Response == nil {
-		err := errors.New("unknown error")
-		if response != nil {
-			err = response.Err
-		}
-		logger.Error(fmt.Sprintf("invalid rest client response when trying to get access token %s", err.Error()), err)
-		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", err)
-	}
-	if response.StatusCode > 299 {
-		var restErr *rest_errors.RestErr
-		err := json.Unmarshal(response.Bytes(), &restErr)
-		if err != nil {
-			logger.Error(fmt.Sprintf("invalid error interface when trying to get access token %s", response.Err.Error()), err)
-			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", err)
-		}
-		return nil, restErr
-	}
-	var at access_token_dto.AccessToken
-	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		logger.Error(fmt.Sprintf("error unmarshaling json response when trying to get access token %s", response.Err.Error()), err)
-		return nil, rest_errors.NewInternalServerError("error unmarshaling json response when trying to get access token", err)
-	}
-	return &at, nil
+	return &authorizationToken, nil
 }
 
 func GetUserId(request *http.Request, email string) (*id_dto.Id, *rest_errors.RestErr) {
